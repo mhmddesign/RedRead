@@ -3,6 +3,8 @@ import { Book, BookGroupType, BooksGroup } from '@/types/book';
 import { EnvConfigType, isTauriAppPlatform } from '@/services/environment';
 import { BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { md5Fingerprint } from '@/utils/md5';
+import { uniqueId } from '@/utils/misc';
+import { useAchievementsStore } from './achievementsStore';
 
 interface LibraryState {
   library: Book[]; // might contain deleted books
@@ -31,6 +33,72 @@ interface LibraryState {
   getGroupName: (id: string) => string | undefined;
   getParentPath: (path: string) => string | undefined;
   getGroupsByParent: (parentPath?: string) => BookGroupType[];
+  // Shelf Management
+  shelves: Shelf[];
+  addShelf: (name: string, description?: string) => void;
+  deleteShelf: (id: string) => void;
+  updateShelf: (id: string, updates: Partial<Shelf>) => void;
+  toggleBookInShelf: (shelfId: string, bookHash: string) => void;
+  // Smart Collections
+  smartCollections: SmartCollection[];
+  addSmartCollection: (
+    name: string,
+    rules: FilterRule[],
+    matchAll?: boolean,
+    description?: string,
+  ) => void;
+  deleteSmartCollection: (id: string) => void;
+  updateSmartCollection: (id: string, updates: Partial<SmartCollection>) => void;
+}
+
+export interface Shelf {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  bookHashes: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'greaterThan'
+  | 'lessThan'
+  | 'startsWith'
+  | 'endsWith';
+export type FilterField =
+  | 'title'
+  | 'author'
+  | 'tag'
+  | 'subject'
+  | 'series'
+  | 'publisher'
+  | 'language'
+  | 'pageCount'
+  | 'rating'
+  | 'dateAdded'
+  | 'datePublished';
+
+export interface FilterRule {
+  id: string;
+  field: FilterField;
+  operator: FilterOperator;
+  value: string | number | boolean;
+}
+
+export interface SmartCollection {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  rules: FilterRule[];
+  matchAll: boolean; // true = AND, false = OR
+  createdAt: number;
+  updatedAt: number;
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -56,7 +124,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   setLibrary: (books) => {
     const { refreshGroups } = get();
     set({ library: books });
+    set({ library: books });
     refreshGroups();
+    useAchievementsStore.getState().checkLibrarySize(books.length);
   },
   updateBook: async (envConfig: EnvConfigType, book: Book) => {
     const appService = await envConfig.getAppService();
@@ -160,5 +230,74 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       }
     });
     return result;
+  },
+
+  shelves: [],
+
+  addShelf: (name: string, description?: string) => {
+    const newShelf: Shelf = {
+      id: uniqueId(),
+      name,
+      description,
+      bookHashes: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    set((state) => ({ shelves: [...state.shelves, newShelf] }));
+  },
+
+  deleteShelf: (id: string) => {
+    set((state) => ({
+      shelves: state.shelves.filter((s) => s.id !== id),
+    }));
+  },
+
+  updateShelf: (id: string, updates: Partial<Shelf>) => {
+    set((state) => ({
+      shelves: state.shelves.map((s) =>
+        s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s,
+      ),
+    }));
+  },
+
+  toggleBookInShelf: (shelfId: string, bookHash: string) => {
+    set((state) => ({
+      shelves: state.shelves.map((s) => {
+        if (s.id !== shelfId) return s;
+        const hasBook = s.bookHashes.includes(bookHash);
+        const newHashes = hasBook
+          ? s.bookHashes.filter((h) => h !== bookHash)
+          : [...s.bookHashes, bookHash];
+      }),
+    }));
+  },
+
+  smartCollections: [],
+
+  addSmartCollection: (name, rules, matchAll = true, description) => {
+    const newCollection: SmartCollection = {
+      id: uniqueId(),
+      name,
+      description,
+      rules,
+      matchAll,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    set((state) => ({ smartCollections: [...state.smartCollections, newCollection] }));
+  },
+
+  deleteSmartCollection: (id) => {
+    set((state) => ({
+      smartCollections: state.smartCollections.filter((c) => c.id !== id),
+    }));
+  },
+
+  updateSmartCollection: (id, updates) => {
+    set((state) => ({
+      smartCollections: state.smartCollections.map((c) =>
+        c.id === id ? { ...c, ...updates, updatedAt: Date.now() } : c,
+      ),
+    }));
   },
 }));

@@ -1,11 +1,11 @@
 {
-  "name": "@readest/monorepo",
+  "name": "@redread/monorepo",
   "private": true,
-  "repository": "readest/readest",
+  "repository": "mhmddesign/redread",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tauri": "pnpm --filter @readest/readest-app tauri",
-    "dev-web": "pnpm --filter @readest/readest-app dev-web"
+    "tauri": "pnpm --filter @redread/redread-app tauri",
+    "dev-web": "pnpm --filter @redread/redread-app dev-web"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

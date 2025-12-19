@@ -30,6 +30,7 @@ import {
   formatAuthors,
   getPrimaryLanguage,
   getLibraryBackupFilename,
+  getSubjectsList,
 } from '@/utils/book';
 import { md5, partialMD5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
@@ -376,6 +377,7 @@ export abstract class BaseAppService implements AppService {
         title: formatTitle(loadedBook.metadata.title),
         sourceTitle: formatTitle(loadedBook.metadata.title),
         primaryLanguage,
+        subjects: getSubjectsList(loadedBook.metadata.subject),
         author: formatAuthors(loadedBook.metadata.author, primaryLanguage),
         createdAt: existingBook ? existingBook.createdAt : Date.now(),
         uploadedAt: existingBook ? existingBook.uploadedAt : null,

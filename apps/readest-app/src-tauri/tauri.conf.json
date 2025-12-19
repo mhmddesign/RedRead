@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Readest",
-  "mainBinaryName": "readest",
-  "identifier": "com.bilingify.readest",
+  "productName": "RedRead",
+  "mainBinaryName": "redread",
+  "identifier": "com.redread.app",
   "version": "../package.json",
   "build": {
     "frontendDist": "../out",
@@ -30,7 +30,7 @@
             "$APPDATA/**/*",
             "$APPCACHE/**/*",
             "$TEMP/**/*",
-            "**/Readest/**/*",
+            "**/RedRead/**/*",
             "/private/var/mobile/Containers/Data/Application/**/*"
           ],
           "deny": []
@@ -78,51 +78,72 @@
     "fileAssociations": [
       {
         "name": "epub",
-        "ext": ["epub"],
+        "ext": [
+          "epub"
+        ],
         "description": "EPUB file",
         "mimeType": "application/epub+zip",
         "role": "Viewer"
       },
       {
         "name": "mobi",
-        "ext": ["mobi"],
+        "ext": [
+          "mobi"
+        ],
         "description": "MOBI file",
         "mimeType": "application/x-mobipocket-ebook",
         "role": "Viewer"
       },
       {
         "name": "azw",
-        "ext": ["azw"],
+        "ext": [
+          "azw"
+        ],
         "description": "AZW file",
         "mimeType": "application/vnd.amazon.ebook",
         "role": "Viewer"
       },
       {
         "name": "azw3",
-        "ext": ["azw3"],
+        "ext": [
+          "azw3"
+        ],
         "description": "AZW3 file",
         "mimeType": "application/vnd.amazon.mobi8-ebook",
         "role": "Viewer"
       },
       {
         "name": "fb2",
-        "ext": ["fb2"],
+        "ext": [
+          "fb2"
+        ],
         "description": "FB2 file",
         "mimeType": "application/x-fictionbook+xml",
         "role": "Viewer"
       },
       {
         "name": "cbz",
-        "ext": ["cbz"],
+        "ext": [
+          "cbz"
+        ],
         "description": "CBZ file",
         "mimeType": "application/vnd.comicbook+zip",
         "role": "Viewer"
       },
       {
         "name": "pdf",
-        "ext": ["pdf"],
+        "ext": [
+          "pdf"
+        ],
         "description": "PDF file",
         "mimeType": "application/pdf",
+        "role": "Viewer"
+      },
+      {
+        "name": "audio",
+        "ext": ["mp3", "m4b"],
+        "description": "Audiobook",
+        "mimeType": "audio/*",
         "role": "Viewer"
       }
     ],
@@ -133,7 +154,7 @@
       "requireLiteralLeadingDot": false
     },
     "cli": {
-      "description": "Readest CLI",
+      "description": "RedRead CLI",
       "args": [
         {
           "name": "file1",
@@ -158,16 +179,22 @@
       ]
     },
     "deep-link": {
-      "mobile": [{ "host": "web.readest.com" }],
+      "mobile": [
+        {
+          "host": "app.redread.com"
+        }
+      ],
       "desktop": {
-        "schemes": ["readest"]
+        "schemes": [
+          "redread"
+        ]
       }
     },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFMEQ1QjE2OEU1NEIzNTEKUldSUnMxU09GbHNOdmpEaWFMT1crRFpEV2VORzQ2MklxaFc0M1R0ci9xY2c1bENXS0xhM1R1L2sK",
       "endpoints": [
-        "https://download.readest.com/releases/latest.json",
-        "https://github.com/readest/readest/releases/latest/download/latest.json"
+        "https://releases.redread.com/latest.json",
+        "https://github.com/mhmddesign/redread/releases/latest/download/latest.json"
       ]
     }
   }

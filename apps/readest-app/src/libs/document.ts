@@ -77,8 +77,11 @@ export const EXTS: Record<BookFormat, string> = {
   AZW: 'azw',
   AZW3: 'azw3',
   CBZ: 'cbz',
+  CBR: 'cbr',
   FB2: 'fb2',
   FBZ: 'fbz',
+  MANGA: 'cbz', // Default for manga
+  AUDIO: 'mp3',
 };
 
 export const MIMETYPES: Record<BookFormat, string[]> = {
@@ -88,8 +91,16 @@ export const MIMETYPES: Record<BookFormat, string[]> = {
   AZW: ['application/vnd.amazon.ebook'],
   AZW3: ['application/vnd.amazon.mobi8-ebook', 'application/x-mobi8-ebook'],
   CBZ: ['application/vnd.comicbook+zip', 'application/zip'],
+  CBR: [
+    'application/vnd.comicbook-rar',
+    'application/x-cbr',
+    'application/x-rar-compressed',
+    'application/rar',
+  ],
   FB2: ['application/x-fictionbook+xml', 'text/xml', 'application/xml'],
   FBZ: ['application/x-zip-compressed-fb2', 'application/zip'],
+  MANGA: ['application/vnd.comicbook+zip'],
+  AUDIO: ['audio/mpeg', 'audio/mp4', 'audio/m4b', 'audio/x-m4b'],
 };
 
 export class DocumentLoader {
@@ -161,9 +172,59 @@ export class DocumentLoader {
     return { entries, loadText, loadBlob, getSize, getComment, sha1: undefined };
   }
 
+  private async makeRarLoader() {
+    // Dynamic import to avoid loading unrar-js when not needed
+    const { createExtractorFromData } = await import('unrar-js');
+
+    const buffer = await this.file.arrayBuffer();
+    const extractor = await createExtractorFromData({ data: buffer });
+
+    // Get file list from the archive
+    const list = extractor.getFileList();
+    const entries = list.fileHeaders.map((header) => ({
+      filename: header.name,
+      // unrar-js specific properties we might need
+      ...header,
+    }));
+
+    const map = new Map(entries.map((entry) => [entry.filename, entry]));
+
+    const loadBlob = async (name: string) => {
+      const entry = map.get(name);
+      if (!entry) return null;
+
+      const extracted = extractor.extract({ files: [name] });
+      const fileData = extracted.files.find((f) => f.fileHeader.name === name);
+
+      if (fileData && fileData.extraction) {
+        // Create Blob from the extracted Uint8Array
+        return new Blob([fileData.extraction]);
+      }
+      return null;
+    };
+
+    const getSize = (name: string) => {
+      const entry = map.get(name);
+      return entry ? entry.unpackedSize : 0;
+    };
+
+    const getComment = async () => null; // RAR comments not supported yet
+
+    return { entries, loadBlob, getSize, getComment };
+  }
+
   private isCBZ(): boolean {
     return (
       this.file.type === 'application/vnd.comicbook+zip' || this.file.name.endsWith(`.${EXTS.CBZ}`)
+    );
+  }
+
+  private isCBR(): boolean {
+    return (
+      this.file.type === 'application/vnd.comicbook-rar' ||
+      this.file.type === 'application/x-cbr' ||
+      this.file.type === 'application/x-rar-compressed' || // Common for CBR files
+      this.file.name.toLowerCase().endsWith(`.${EXTS.CBR}`)
     );
   }
 
@@ -188,6 +249,8 @@ export class DocumentLoader {
     if (!this.file.size) {
       throw new Error('File is empty');
     }
+
+    // Check for ZIP-based formats (EPUB, CBZ, FBZ)
     if (await this.isZip()) {
       const loader = await this.makeZipLoader();
       const { entries } = loader;
@@ -207,11 +270,22 @@ export class DocumentLoader {
         book = await new EPUB(loader).init();
         format = 'EPUB';
       }
-    } else if (await this.isPDF()) {
+    }
+    // Check for RAR-based formats (CBR)
+    else if (this.isCBR()) {
+      const loader = await this.makeRarLoader();
+      const { makeComicBook } = await import('foliate-js/comic-book.js');
+      book = await makeComicBook(loader, this.file);
+      format = 'CBR';
+    }
+    // Check for PDF
+    else if (await this.isPDF()) {
       const { makePDF } = await import('foliate-js/pdf.js');
       book = await makePDF(this.file);
       format = 'PDF';
-    } else if (await (await import('foliate-js/mobi.js')).isMOBI(this.file)) {
+    }
+    // Check for MOBI/AZW/AZW3
+    else if (await (await import('foliate-js/mobi.js')).isMOBI(this.file)) {
       const fflate = await import('foliate-js/vendor/fflate.js');
       const { MOBI } = await import('foliate-js/mobi.js');
       book = await new MOBI({ unzlib: fflate.unzlibSync }).open(this.file);
@@ -226,11 +300,14 @@ export class DocumentLoader {
         default:
           format = 'MOBI';
       }
-    } else if (this.isFB2()) {
+    }
+    // Check for raw FB2 (XML)
+    else if (this.isFB2()) {
       const { makeFB2 } = await import('foliate-js/fb2.js');
       book = await makeFB2(this.file);
       format = 'FB2';
     }
+
     return { book, format } as { book: BookDoc; format: BookFormat };
   }
 }

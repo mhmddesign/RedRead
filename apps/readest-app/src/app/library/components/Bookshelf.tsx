@@ -37,6 +37,7 @@ interface BookshelfProps {
   handleShowDetailsBook: (book: Book) => void;
   handlePushLibrary: () => Promise<void>;
   booksTransferProgress: { [key: string]: number | null };
+  handleAddToShelf: (bookIds: string[]) => void;
 }
 
 const Bookshelf: React.FC<BookshelfProps> = ({
@@ -52,6 +53,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   handleShowDetailsBook,
   handlePushLibrary,
   booksTransferProgress,
+  handleAddToShelf,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -310,6 +312,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
             handleBookDelete={handleBookDelete}
             handleSetSelectMode={handleSetSelectMode}
             handleShowDetailsBook={handleShowDetailsBook}
+            handleAddToShelf={handleAddToShelf}
             transferProgress={
               'hash' in item ? booksTransferProgress[(item as Book).hash] || null : null
             }
@@ -356,6 +359,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
           onGroup={groupSelectedBooks}
           onDetails={openBookDetails}
           onDelete={deleteSelectedBooks}
+          onAddToShelf={() => handleAddToShelf(selectedBooks)}
           onCancel={() => handleSetSelectMode(false)}
         />
       )}

@@ -3,12 +3,19 @@ import { isContentURI, isFileURI, isValidURL } from './misc';
 
 export const getFilename = (fileOrUri: string) => {
   if (isValidURL(fileOrUri) || isContentURI(fileOrUri) || isFileURI(fileOrUri)) {
-    fileOrUri = decodeURI(fileOrUri);
+    try {
+      fileOrUri = decodeURI(fileOrUri);
+    } catch (e) {
+      console.warn('Failed to decode URI', fileOrUri, e);
+    }
   }
+  // Handle Windows UNC paths (starting with \\) by preserving the double slash if present at start
+  const isUNC = fileOrUri.startsWith('\\\\');
   const normalizedPath = fileOrUri.replace(/\\/g, '/');
+  
   const parts = normalizedPath.split('/');
-  const lastPart = parts.pop()!;
-  return lastPart.split('?')[0]!;
+  const lastPart = parts.pop();
+  return (lastPart || '').split('?')[0]!;
 };
 
 export const getBaseFilename = (filename: string) => {

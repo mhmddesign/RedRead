@@ -23,10 +23,10 @@ dunce = "1"
 url = "2"
 
 [workspace.package]
-authors = ["Bilingify LLC"]
-homepage = "https://readest.com"
+authors = ["RedRead"]
+homepage = "https://redread.com"
 license = "AGPL-3.0"
-repository = "https://github.com/readest/readest"
+repository = "https://github.com/YOUR_USERNAME/redread"
 categories = []
 edition = "2021"
 rust-version = "1.77.2"

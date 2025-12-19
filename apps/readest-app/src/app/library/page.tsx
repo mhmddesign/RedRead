@@ -11,7 +11,13 @@ import 'overlayscrollbars/overlayscrollbars.css';
 import { Book } from '@/types/book';
 import { AppService, DeleteAction } from '@/types/system';
 import { navigateToLibrary, navigateToLogin, navigateToReader } from '@/utils/nav';
-import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
+import {
+  formatAuthors,
+  formatTitle,
+  getPrimaryLanguage,
+  listFormater,
+  getSubjectsList,
+} from '@/utils/book';
 import { eventDispatcher } from '@/utils/event';
 import { ProgressPayload } from '@/utils/transfer';
 import { throttle } from '@/utils/throttle';
@@ -63,6 +69,11 @@ import Bookshelf from './components/Bookshelf';
 import useShortcuts from '@/hooks/useShortcuts';
 import DropIndicator from '@/components/DropIndicator';
 import SettingsDialog from '@/components/settings/SettingsDialog';
+import ShelfManager from '@/components/library/ShelfManager';
+import ShelfSelectionModal from '@/components/library/ShelfSelectionModal';
+import SmartCollectionsManager from '@/components/library/SmartCollectionsManager';
+import FolderNavigation from './components/FolderNavigation';
+import { filterBooksByCollection } from '@/utils/filter';
 
 const LibraryPageWithSearchParams = () => {
   const searchParams = useSearchParams();
@@ -86,6 +97,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     checkLastOpenBooks,
     setCheckOpenWithBooks,
     setCheckLastOpenBooks,
+    shelves,
+    smartCollections,
   } = useLibraryStore();
   const _ = useTranslation();
   const { selectFiles } = useFileSelector(appService, _);
@@ -98,6 +111,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   );
   const [loading, setLoading] = useState(false);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
+  const [showShelfManager, setShowShelfManager] = useState(false);
+  const [showSmartCollectionsManager, setShowSmartCollectionsManager] = useState(false);
+  const [showShelfSelectionModal, setShowShelfSelectionModal] = useState(false);
+  const [shelfSelectionBookIds, setShelfSelectionBookIds] = useState<string[]>([]);
+  const [selectedShelfId, setSelectedShelfId] = useState<string | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isSelectAll, setIsSelectAll] = useState(false);
   const [isSelectNone, setIsSelectNone] = useState(false);
@@ -120,6 +138,16 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   useUICSS();
 
   useOpenWithBooks();
+
+  // Helper to scroll to top
+  const scrollToTop = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+    if (window) {
+      window.scrollTo(0, 0);
+    }
+  };
 
   const { pullLibrary, pushLibrary } = useBooksSync();
   const { isDragging } = useDragDropImport();
@@ -377,6 +405,24 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demoBooks, libraryLoaded]);
 
+  const filteredBooks = React.useMemo(() => {
+    if (!selectedShelfId) return libraryBooks;
+
+    // Check shelves
+    const shelf = shelves.find((s) => s.id === selectedShelfId);
+    if (shelf) {
+      return libraryBooks.filter((book) => shelf.bookHashes.includes(book.hash));
+    }
+
+    // Check smart collections
+    const smartCollection = smartCollections.find((sc) => sc.id === selectedShelfId);
+    if (smartCollection) {
+      return filterBooksByCollection(libraryBooks, smartCollection);
+    }
+
+    return libraryBooks;
+  }, [libraryBooks, selectedShelfId, shelves, smartCollections]);
+
   const importBooks = async (files: SelectedFile[], groupId?: string) => {
     setLoading(true);
     const { library } = useLibraryStore.getState();
@@ -586,11 +632,15 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     };
   };
 
-  const handleUpdateMetadata = async (book: Book, metadata: BookMetadata) => {
+  const handleUpdateMetadata = async (book: Book, metadata: BookMetadata, tags?: string[]) => {
     book.metadata = metadata;
     book.title = formatTitle(metadata.title);
     book.author = formatAuthors(metadata.author);
     book.primaryLanguage = getPrimaryLanguage(metadata.language);
+    book.subjects = getSubjectsList(metadata.subject);
+    if (tags) {
+      book.tags = tags;
+    }
     book.updatedAt = Date.now();
     if (metadata.coverImageBlobUrl || metadata.coverImageUrl || metadata.coverImageFile) {
       book.coverImageUrl = metadata.coverImageBlobUrl || metadata.coverImageUrl;
@@ -700,6 +750,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     }, 300);
   };
 
+  const handleAddToShelf = (bookIds: string[]) => {
+    setShelfSelectionBookIds(bookIds);
+    setShowShelfSelectionModal(true);
+  };
+
   if (!appService || !insets || checkOpenWithBooks || checkLastOpenBooks) {
     return <div className={clsx('full-height', !appService?.isLinuxApp && 'bg-base-200')} />;
   }
@@ -733,6 +788,10 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
+          onToggleShelfManager={() => setShowShelfManager(!showShelfManager)}
+          shelves={shelves}
+          selectedShelfId={selectedShelfId}
+          onSelectShelf={setSelectedShelfId}
         />
         <progress
           className={clsx(
@@ -747,6 +806,25 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
         <div className='fixed inset-0 z-50 flex items-center justify-center'>
           <Spinner loading />
         </div>
+      )}
+      {showShelfManager && (
+        <div
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
+          onClick={() => setShowShelfManager(false)}
+        >
+          <div className='m-4 w-full max-w-md' onClick={(e) => e.stopPropagation()}>
+            <ShelfManager />
+          </div>
+        </div>
+      )}
+      {showShelfSelectionModal && (
+        <ShelfSelectionModal
+          bookIds={shelfSelectionBookIds}
+          onClose={() => {
+            setShowShelfSelectionModal(false);
+            setShelfSelectionBookIds([]);
+          }}
+        />
       )}
       {currentGroupPath && (
         <div
@@ -809,8 +887,17 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
               }}
             >
               <DropIndicator />
+              <DropIndicator />
+              <DropIndicator />
+              <FolderNavigation
+                currentPath={currentGroupPath}
+                onNavigate={(path) => {
+                  handleNavigateToPath(path);
+                  scrollToTop();
+                }}
+              />
               <Bookshelf
-                libraryBooks={libraryBooks}
+                libraryBooks={filteredBooks}
                 isSelectMode={isSelectMode}
                 isSelectAll={isSelectAll}
                 isSelectNone={isSelectNone}
@@ -861,6 +948,16 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       <MigrateDataWindow />
       {isSettingsDialogOpen && <SettingsDialog bookKey={''} />}
       {showCatalogManager && <CatalogDialog onClose={handleDismissOPDSDialog} />}
+      {showSmartCollectionsManager && (
+        <SmartCollectionsManager
+          isOpen={showSmartCollectionsManager}
+          onClose={() => setShowSmartCollectionsManager(false)}
+          onSelectCollection={(id) => {
+            setSelectedShelfId(id);
+            setShowSmartCollectionsManager(false);
+          }}
+        />
+      )}
       <Toast />
     </div>
   );

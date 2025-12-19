@@ -12,6 +12,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { eventDispatcher } from '@/utils/event';
 import { getOSPlatform } from '@/utils/misc';
 import { throttle } from '@/utils/throttle';
+import { useAudiobookStore } from '@/store/audiobookStore';
 import { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
 import { BOOK_UNGROUPED_ID, BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { FILE_REVEAL_LABELS, FILE_REVEAL_PLATFORMS } from '@/utils/os';
@@ -87,6 +88,7 @@ interface BookshelfItemProps {
   handleBookDelete: (book: Book, syncBooks?: boolean) => Promise<boolean>;
   handleSetSelectMode: (selectMode: boolean) => void;
   handleShowDetailsBook: (book: Book) => void;
+  handleAddToShelf: (bookIds: string[]) => void;
 }
 
 const BookshelfItem: React.FC<BookshelfItemProps> = ({
@@ -103,6 +105,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   handleBookDownload,
   handleSetSelectMode,
   handleShowDetailsBook,
+  handleAddToShelf,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -149,6 +152,17 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       } else {
         const available = await makeBookAvailable(book);
         if (!available) return;
+
+        if (book.format === 'AUDIO') {
+          useAudiobookStore.getState().play(book.hash, {
+            path: book.filePath || '', // Assuming filePath is available locally
+            name: book.title,
+            duration: 0, // Will be loaded by player
+            format: 'mp3', // Default or detect
+          });
+          return;
+        }
+
         if (appService?.hasWindow && settings.openBookInNewWindow) {
           showReaderWindow(appService, [book.hash]);
         } else {
@@ -213,6 +227,12 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         showBookDetailsModal(book);
       },
     });
+    const addToShelfMenuItem = await MenuItem.new({
+      text: _('Add to Shelf'),
+      action: async () => {
+        handleAddToShelf([book.hash]);
+      },
+    });
     const downloadBookMenuItem = await MenuItem.new({
       text: _('Download Book'),
       action: async () => {
@@ -235,6 +255,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
     menu.append(selectBookMenuItem);
     menu.append(groupBooksMenuItem);
     menu.append(showBookDetailsMenuItem);
+    menu.append(addToShelfMenuItem);
     menu.append(showBookInFinderMenuItem);
     if (book.uploadedAt && !book.downloadedAt) {
       menu.append(downloadBookMenuItem);

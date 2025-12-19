@@ -1,12 +1,44 @@
 import { BookMetadata } from '@/libs/document';
 import { TTSHighlightOptions } from '@/services/tts/types';
 
-export type BookFormat = 'EPUB' | 'PDF' | 'MOBI' | 'AZW' | 'AZW3' | 'CBZ' | 'FB2' | 'FBZ';
+export type BookFormat =
+  | 'EPUB'
+  | 'PDF'
+  | 'MOBI'
+  | 'AZW'
+  | 'AZW3'
+  | 'CBZ'
+  | 'CBR'
+  | 'FB2'
+  | 'FBZ'
+  | 'MANGA'
+  | 'AUDIO';
 export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt';
 export type HighlightStyle = 'highlight' | 'underline' | 'squiggly';
 export type HighlightColor = 'red' | 'yellow' | 'green' | 'blue' | 'violet';
 
-export const FIXED_LAYOUT_FORMATS: Set<BookFormat> = new Set(['PDF', 'CBZ']);
+export const FIXED_LAYOUT_FORMATS: Set<BookFormat> = new Set(['PDF', 'CBZ', 'CBR', 'MANGA']);
+
+export interface MangaChapter {
+  id: string;
+  title: string;
+  url: string;
+  scanlator?: string;
+  uploadDate: number;
+  read: boolean;
+  pageCount?: number;
+}
+
+export interface MangaSource {
+  id: string;
+  name: string;
+  url: string;
+  logo: string;
+  type: 'opds' | 'custom' | 'extension';
+  version: string;
+  isNsfw: boolean;
+  enabled: boolean;
+}
 
 export interface Book {
   // if Book is a remote book we just lazy load the book content via url
@@ -39,8 +71,17 @@ export interface Book {
   lastUpdated?: number; // deprecated in favor of updatedAt
   progress?: [number, number]; // Add progress field: [current, total], 1-based page number
   primaryLanguage?: string;
+  subjects?: string[];
 
   metadata?: BookMetadata;
+
+  // Manga specific fields
+  isManga?: boolean;
+  mangaSourceId?: string;
+  mangaId?: string;
+  chapters?: MangaChapter[];
+  totalChapters?: number;
+  readingDirection?: 'ltr' | 'rtl' | 'vertical';
 }
 
 export interface BookGroupType {
@@ -136,7 +177,12 @@ export interface BookStyle {
   codeHighlighting: boolean;
   codeLanguage: string;
   userStylesheet: string;
+
   userUIStylesheet: string;
+
+  // Accessibility
+  bionicReadingEnabled: boolean;
+  bionicReadingIntensity: number; // 0-1
 
   // fixed-layout specific
   zoomMode: 'fit-page' | 'fit-width' | 'original-size' | 'custom';
@@ -209,7 +255,6 @@ export interface TranslatorConfig {
 export interface ScreenConfig {
   screenOrientation: 'auto' | 'portrait' | 'landscape';
 }
-
 
 export interface ReplacementRule {
   id: string;

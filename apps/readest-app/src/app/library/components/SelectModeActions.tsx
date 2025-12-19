@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MdDelete, MdOpenInNew, MdOutlineCancel, MdInfoOutline } from 'react-icons/md';
+import { MdDelete, MdOpenInNew, MdOutlineCancel, MdInfoOutline, MdFolder } from 'react-icons/md';
 import { LuFolderPlus } from 'react-icons/lu';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -13,6 +13,7 @@ interface SelectModeActionsProps {
   onDetails: () => void;
   onDelete: () => void;
   onCancel: () => void;
+  onAddToShelf: () => void;
 }
 
 const SelectModeActions: React.FC<SelectModeActionsProps> = ({
@@ -23,6 +24,7 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
   onDetails,
   onDelete,
   onCancel,
+  onAddToShelf,
 }) => {
   const _ = useTranslation();
 
@@ -75,6 +77,16 @@ const SelectModeActions: React.FC<SelectModeActionsProps> = ({
         >
           <MdInfoOutline />
           <div>{_('Details')}</div>
+        </button>
+        <button
+          onClick={onAddToShelf}
+          className={clsx(
+            'flex flex-col items-center justify-center gap-1',
+            !hasSelection && 'btn-disabled opacity-50',
+          )}
+        >
+          <MdFolder />
+          <div>{_('Shelf')}</div>
         </button>
         <button
           onClick={onDelete}

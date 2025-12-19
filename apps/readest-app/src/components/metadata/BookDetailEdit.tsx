@@ -26,6 +26,8 @@ interface BookDetailEditProps {
   onCancel: () => void;
   onReset: () => void;
   onSave: () => void;
+  tags?: string[];
+  onTagsChange?: (tags: string[]) => void;
 }
 
 const emptyCoverImageUrl = '_blank';
@@ -45,6 +47,8 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
   onCancel,
   onReset,
   onSave,
+  tags = [],
+  onTagsChange,
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
@@ -143,7 +147,27 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
       value: metadata.description || '',
       placeholder: _('Enter book description'),
     },
+    {
+      field: 'tags',
+      label: _('Tags'),
+      value: tags.join(', '),
+      placeholder: _('Favorites, To Read, etc.'),
+    },
   ];
+
+  const handleFieldChangeWrapper = (field: string, value: string | undefined) => {
+    if (field === 'tags') {
+      const newTags = value
+        ? value
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+      onTagsChange?.(newTags);
+    } else {
+      onFieldChange(field, value);
+    }
+  };
 
   const handleSelectLocalImage = async () => {
     selectFiles({ type: 'covers', multiple: false }).then(async (result) => {
@@ -248,7 +272,7 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
               label={label}
               required={required}
               value={value}
-              onFieldChange={onFieldChange}
+              onFieldChange={handleFieldChangeWrapper}
               fieldSources={fieldSources}
               lockedFields={lockedFields}
               fieldErrors={fieldErrors}
@@ -269,7 +293,7 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
               label={label}
               value={value}
               isNumber={isNumber}
-              onFieldChange={onFieldChange}
+              onFieldChange={handleFieldChangeWrapper}
               fieldSources={fieldSources}
               lockedFields={lockedFields}
               fieldErrors={fieldErrors}
@@ -288,7 +312,7 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
               type={type as 'input' | 'textarea'}
               rows={rows}
               value={value}
-              onFieldChange={onFieldChange}
+              onFieldChange={handleFieldChangeWrapper}
               fieldSources={fieldSources}
               lockedFields={lockedFields}
               fieldErrors={fieldErrors}

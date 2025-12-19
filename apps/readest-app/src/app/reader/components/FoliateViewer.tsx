@@ -150,6 +150,7 @@ const FoliateViewer: React.FC<{
                 'sanitizer',
                 'simplecc',
                 'replacement',
+                'bionic',
               ],
               sectionHref: detail.name, // Pass section href for single-instance replacements
             };

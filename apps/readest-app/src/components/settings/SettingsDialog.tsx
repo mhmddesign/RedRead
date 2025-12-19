@@ -21,8 +21,10 @@ import DialogMenu from './DialogMenu';
 import ControlPanel from './ControlPanel';
 import LangPanel from './LangPanel';
 import MiscPanel from './MiscPanel';
+import SmartPanel from './SmartPanel';
+import { RiRobot2Line } from 'react-icons/ri';
 
-export type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Control' | 'Language' | 'Custom';
+export type SettingsPanelType = 'Font' | 'Layout' | 'Color' | 'Control' | 'Language' | 'Custom' | 'Features';
 export type SettingsPanelPanelProp = {
   bookKey: string;
   onRegisterReset: (resetFn: () => void) => void;
@@ -74,6 +76,11 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       icon: IoAccessibilityOutline,
       label: _('Custom'),
     },
+    {
+      tab: 'Features',
+      icon: RiRobot2Line,
+      label: _('Features'),
+    },
   ] as TabConfig[];
 
   const [activePanel, setActivePanel] = useState<SettingsPanelType>(() => {
@@ -98,7 +105,9 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     Color: null,
     Control: null,
     Language: null,
+    Language: null,
     Custom: null,
+    Features: null,
   });
 
   const registerResetFunction = (panel: SettingsPanelType, resetFn: () => void) => {
@@ -282,6 +291,12 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           <MiscPanel
             bookKey={bookKey}
             onRegisterReset={(fn) => registerResetFunction('Custom', fn)}
+          />
+        )}
+        {activePanel === 'Features' && (
+          <SmartPanel
+            bookKey={bookKey}
+            onRegisterReset={(fn) => registerResetFunction('Features', fn)}
           />
         )}
       </div>

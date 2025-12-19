@@ -5,23 +5,8 @@ import { FaSearch } from 'react-icons/fa';
 import { PiPlus } from 'react-icons/pi';
 import { PiSelectionAll, PiSelectionAllFill } from 'react-icons/pi';
 import { PiDotsThreeCircle } from 'react-icons/pi';
-import { MdOutlineMenu } from 'react-icons/md';
-import { IoMdCloseCircle } from 'react-icons/io';
-
-import { useEnv } from '@/context/EnvContext';
-import { useThemeStore } from '@/store/themeStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useLibraryStore } from '@/store/libraryStore';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useTrafficLight } from '@/hooks/useTrafficLight';
-import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { debounce } from '@/utils/debounce';
-import useShortcuts from '@/hooks/useShortcuts';
-import WindowButtons from '@/components/WindowButtons';
-import Dropdown from '@/components/Dropdown';
-import SettingsMenu from './SettingsMenu';
-import ImportMenu from './ImportMenu';
-import ViewMenu from './ViewMenu';
+import { Shelf, SmartCollection } from '@/store/libraryStore';
+import { MdOutlineMenu, MdMenuBook, MdFolder, MdFilterList } from 'react-icons/md';
 
 interface LibraryHeaderProps {
   isSelectMode: boolean;
@@ -32,6 +17,12 @@ interface LibraryHeaderProps {
   onToggleSelectMode: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
+  onToggleShelfManager: () => void;
+  onToggleSmartCollectionsManager: () => void;
+  shelves: Shelf[];
+  smartCollections: SmartCollection[];
+  selectedShelfId: string | null;
+  onSelectShelf: (id: string | null) => void;
 }
 
 const LibraryHeader: React.FC<LibraryHeaderProps> = ({
@@ -43,6 +34,12 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   onToggleSelectMode,
   onSelectAll,
   onDeselectAll,
+  onToggleShelfManager,
+  onToggleSmartCollectionsManager,
+  shelves,
+  smartCollections,
+  selectedShelfId,
+  onSelectShelf,
 }) => {
   const _ = useTranslation();
   const router = useRouter();
@@ -200,6 +197,103 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
           </div>
         ) : (
           <div className='flex h-full items-center gap-x-2 sm:gap-x-4'>
+            <button
+              className='btn btn-ghost flex h-8 min-h-8 w-8 items-center justify-center p-0'
+              onClick={() => router.push('/dashboard')}
+              title={_('Dashboard')}
+              aria-label={_('Dashboard')}
+            >
+              <IoMdAnalytics size={iconSize18} />
+            </button>
+            <Dropdown
+              label={_('Shelves')}
+              className='exclude-title-bar-mousedown dropdown-bottom dropdown-end'
+              buttonClassName={clsx(
+                'btn btn-ghost h-8 min-h-8 w-8 p-0',
+                selectedShelfId && 'text-primary',
+              )}
+              toggleButton={<MdFolder role='none' size={iconSize18} />}
+            >
+              <ul className='menu menu-sm bg-base-200 rounded-box max-h-64 w-52 flex-nowrap overflow-y-auto'>
+                <li>
+                  <button
+                    type='button'
+                    className={clsx(!selectedShelfId && 'active', 'text-left')}
+                    onClick={() => onSelectShelf(null)}
+                  >
+                    {_('All Books')}
+                  </button>
+                </li>
+                {shelves.map((shelf) => (
+                  <li key={shelf.id}>
+                    <button
+                      type='button'
+                      className={clsx(
+                        selectedShelfId === shelf.id && 'active',
+                        'flex justify-between text-left',
+                      )}
+                      onClick={() => onSelectShelf(shelf.id)}
+                    >
+                      <span className='truncate'>{shelf.name}</span>
+                      <span className='badge badge-sm badge-ghost ml-2 shrink-0'>
+                        {shelf.bookHashes.length}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+                {shelves.length > 0 && <div className='divider my-1'></div>}
+
+                {/* Smart Collections */}
+                {smartCollections.length > 0 && (
+                  <li className='menu-title px-2 py-1 text-xs font-bold uppercase opacity-50'>
+                    {_('Smart Filter')}
+                  </li>
+                )}
+                {smartCollections.map((collection) => (
+                  <li key={collection.id}>
+                    <button
+                      type='button'
+                      className={clsx(
+                        selectedShelfId === collection.id && 'active',
+                        'flex justify-between text-left',
+                      )}
+                      onClick={() => onSelectShelf(collection.id)}
+                    >
+                      <span className='flex items-center gap-2 truncate'>
+                        <MdFilterList className='h-3 w-3 opacity-70' />
+                        {collection.name}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+
+                <div className='divider my-1'></div>
+                <li>
+                  <button type='button' onClick={onToggleShelfManager} className='text-left'>
+                    <MdFolder className='text-secondary' />
+                    {_('Manage Shelves')}
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type='button'
+                    onClick={onToggleSmartCollectionsManager}
+                    className='text-left'
+                  >
+                    <MdFilterList className='text-accent' />
+                    {_('Manage Smart Collections')}
+                  </button>
+                </li>
+              </ul>
+            </Dropdown>
+            <button
+              className='btn btn-ghost flex h-8 min-h-8 w-8 items-center justify-center p-0'
+              onClick={() => router.push('/manga')}
+              title={_('Manga')}
+              aria-label={_('Manga')}
+            >
+              <MdMenuBook size={iconSize18} />
+            </button>
             <Dropdown
               label={_('View Menu')}
               className='exclude-title-bar-mousedown dropdown-bottom dropdown-end'

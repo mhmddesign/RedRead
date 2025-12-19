@@ -135,6 +135,60 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
           onChange={handleLineHeightChange}
         />
       </div>
+
+      <div className='border-base-300 w-full border-t pt-4'>
+        <div className='mb-2 flex items-center justify-between'>
+          <span className='text-sm font-semibold'>{_('Bionic Reading')}</span>
+          <input
+            type='checkbox'
+            className='toggle toggle-primary toggle-sm'
+            checked={viewSettings?.bionicReadingEnabled ?? false}
+            onChange={(e) => {
+              saveViewSettings(envConfig, bookKey, 'bionicReadingEnabled', e.target.checked);
+              // Force re-render of view to apply transformer
+              if (view?.renderer) {
+                view.renderer.border?.clear();
+                // We might need to reload or re-render. A simple way is to toggle flow or similar,
+                // but transformers run on content load. Ideally we re-render the current location.
+                // For now, let's just save. The user might need to reload or chapter change to see effect if we don't force it.
+                // Actually, foliate-js view might not expose easy "re-transform" without reload.
+                // Let's trigger a reload of component or similar if needed, but saveViewSettings usually triggers updates.
+                // However, Transformers are applied at 'content-load' time in FoliateViewer.tsx (getDocTransformHandler).
+                // So we need to reload the section.
+                setTimeout(() => {
+                  const currentCfi = view.renderer.location;
+                  // This is a bit hacky, but effectively reloading the view or section is required.
+                  // We can use recreateViewer from store if we want a full reload, or just let user know.
+                  // For now, let's rely on the fact that changing settings updates state,
+                  // and FoliateViewer might react if we depend on it.
+                  // FoliateViewer.tsx depends on viewSettings.
+                  // But transformers are only run when `data` event fires (loading resource).
+                  // We might need to force a reload of the current resource.
+                  view.reload();
+                }, 100);
+              }
+            }}
+          />
+        </div>
+        {viewSettings?.bionicReadingEnabled && (
+          <Slider
+            label={_('Intensity')}
+            initialValue={(viewSettings?.bionicReadingIntensity ?? 0.5) * 100}
+            bubbleLabel={`${Math.round((viewSettings?.bionicReadingIntensity ?? 0.5) * 100)}%`}
+            minLabel='Low'
+            maxLabel='High'
+            min={10}
+            max={100}
+            step={10}
+            onChange={(val) => {
+              saveViewSettings(envConfig, bookKey, 'bionicReadingIntensity', val / 100);
+              if (view?.renderer && viewSettings.bionicReadingEnabled) {
+                setTimeout(() => view.reload(), 500); // Debounce slightly or just wait for slide end
+              }
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };
