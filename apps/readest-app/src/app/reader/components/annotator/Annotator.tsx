@@ -9,6 +9,8 @@ import { BsTranslate } from 'react-icons/bs';
 import { TbHexagonLetterD } from 'react-icons/tb';
 import { FaHeadphones } from 'react-icons/fa6';
 import { MdBuildCircle } from 'react-icons/md';
+import { RiRobot2Line } from 'react-icons/ri';
+import AIPopup from './AIPopup';
 
 import * as CFI from 'foliate-js/epubcfi.js';
 import { Overlayer } from 'foliate-js/overlayer.js';
@@ -64,11 +66,13 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const [showWiktionaryPopup, setShowWiktionaryPopup] = useState(false);
   const [showWikipediaPopup, setShowWikipediaPopup] = useState(false);
   const [showDeepLPopup, setShowDeepLPopup] = useState(false);
+  const [showAIPopup, setShowAIPopup] = useState(false);
   const [showReplacementOptions, setShowReplacementOptions] = useState(false);
   const [trianglePosition, setTrianglePosition] = useState<Position>();
   const [annotPopupPosition, setAnnotPopupPosition] = useState<Position>();
   const [dictPopupPosition, setDictPopupPosition] = useState<Position>();
   const [translatorPopupPosition, setTranslatorPopupPosition] = useState<Position>();
+  const [aiPopupPosition, setAIPopupPosition] = useState<Position>();
   const [highlightOptionsVisible, setHighlightOptionsVisible] = useState(false);
 
   const [selectedStyle, setSelectedStyle] = useState<HighlightStyle>(
@@ -125,6 +129,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     setAnnotPopupPosition(annotPopupPos);
     setDictPopupPosition(dictPopupPos);
     setTranslatorPopupPosition(transPopupPos);
+    setAIPopupPosition(transPopupPos); // Reuse translator position logic
     setTrianglePosition(triangPos);
   }, [
     selection,
@@ -156,6 +161,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       setShowWiktionaryPopup(false);
       setShowWikipediaPopup(false);
       setShowDeepLPopup(false);
+      setShowAIPopup(false);
       setShowReplacementOptions(false);
     }, 500),
     [],
@@ -280,16 +286,24 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   useFoliateEvents(view, { onLoad, onDrawAnnotation, onShowAnnotation });
 
   useEffect(() => {
-    handleShowPopup(showAnnotPopup || showWiktionaryPopup || showWikipediaPopup || showDeepLPopup);
+    handleShowPopup(
+      showAnnotPopup || showWiktionaryPopup || showWikipediaPopup || showDeepLPopup || showAIPopup,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAnnotPopup, showWiktionaryPopup, showWikipediaPopup, showDeepLPopup]);
+  }, [showAnnotPopup, showWiktionaryPopup, showWikipediaPopup, showDeepLPopup, showAIPopup]);
 
   // When popups are visible, update their positions on scroll events
   useEffect(() => {
     const view = getView(bookKey);
     if (!view?.renderer) return;
     const onScroll = () => {
-      if (showAnnotPopup || showWiktionaryPopup || showWikipediaPopup || showDeepLPopup) {
+      if (
+        showAnnotPopup ||
+        showWiktionaryPopup ||
+        showWikipediaPopup ||
+        showDeepLPopup ||
+        showAIPopup
+      ) {
         repositionPopups();
       }
     };
@@ -304,6 +318,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     showWiktionaryPopup,
     showWikipediaPopup,
     showDeepLPopup,
+    showAIPopup,
     repositionPopups,
   ]);
 
@@ -519,8 +534,13 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
   const handleTranslation = () => {
     if (!selection || !selection.text) return;
-    setShowAnnotPopup(false);
     setShowDeepLPopup(true);
+  };
+
+  const handleAI = () => {
+    if (!selection || !selection.text) return;
+    setShowAnnotPopup(false);
+    setShowAIPopup(true);
   };
 
   const handleSpeakText = async () => {
@@ -966,6 +986,11 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       onClick: handleShowReplacementOptions,
       disabled: bookData.book?.format !== 'EPUB',
     },
+    {
+      tooltipText: _('AI Assistant'),
+      Icon: RiRobot2Line,
+      onClick: handleAI,
+    },
   ];
 
   return (
@@ -1032,6 +1057,15 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           selectedText={selection?.text || ''}
           onConfirm={handleReplacementConfirm}
           onClose={() => setShowReplacementOptions(false)}
+        />
+      )}
+      {showAIPopup && selection && aiPopupPosition && (
+        <AIPopup
+          text={selection.text || ''}
+          position={aiPopupPosition}
+          onDismiss={handleDismissPopupAndSelection}
+          width={transPopupWidth}
+          height={transPopupHeight}
         />
       )}
     </div>

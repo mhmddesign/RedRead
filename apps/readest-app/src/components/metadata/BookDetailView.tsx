@@ -21,6 +21,7 @@ import {
 import BookCover from '@/components/BookCover';
 import Dropdown from '../Dropdown';
 import MenuItem from '../MenuItem';
+import SimilarBooksPanel from './SimilarBooksPanel';
 
 interface BookDetailViewProps {
   book: Book;
@@ -170,6 +171,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
             }}
           ></p>
         </div>
+        <SimilarBooksPanel book={book} />
       </div>
     </div>
   );

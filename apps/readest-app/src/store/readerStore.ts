@@ -20,6 +20,7 @@ import { SUPPORTED_LANGNAMES } from '@/services/constants';
 import { useSettingsStore } from './settingsStore';
 import { useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
+import { useProgressStore } from './progressStore';
 import { uniqueId } from '@/utils/misc';
 
 interface ViewState {
@@ -41,6 +42,7 @@ interface ViewState {
     view settings for primary view are saved to book config which is persisted to config file
     omitting settings that are not changed from global settings */
   viewSettings: ViewSettings | null;
+  sessionId?: string;
 }
 
 interface ReaderStore {
@@ -108,6 +110,13 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
 
   clearViewState: (key: string) => {
     set((state) => {
+      const viewState = state.viewStates[key];
+      if (viewState?.sessionId && viewState.progress) {
+        // End the reading session
+        const current = viewState.progress.section.current + 1;
+        useProgressStore.getState().endSession(viewState.sessionId, current);
+      }
+
       const viewStates = { ...state.viewStates };
       delete viewStates[key];
       return { viewStates };
@@ -153,19 +162,33 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       }
       let bookDoc = bookData?.bookDoc;
       let file = bookData?.file;
-      if (!bookDoc || !file || reload) {
+      if ((!bookDoc || !file || reload) && book.format !== 'MANGA') {
         const content = (await appService.loadBookContent(book)) as BookContent;
         file = content.file;
         console.log('Loading book', key);
         const doc = await new DocumentLoader(file).open();
         bookDoc = doc.book;
+      } else if (book.format === 'MANGA' && (!bookDoc || reload)) {
+        // Create dummy BookDoc for Manga
+        bookDoc = {
+          metadata: {
+            title: book.title,
+            author: book.author,
+            language: book.primaryLanguage || 'en',
+          },
+          sections: [],
+          toc: [],
+        } as any;
+        file = null;
       }
       const config = await appService.loadBookConfig(book, settings);
-      await updateToc(
-        bookDoc,
-        config.viewSettings?.sortedTOC ?? false,
-        config.viewSettings?.convertChineseVariant ?? 'none',
-      );
+      if (book.format !== 'MANGA') {
+        await updateToc(
+          bookDoc,
+          config.viewSettings?.sortedTOC ?? false,
+          config.viewSettings?.convertChineseVariant ?? 'none',
+        );
+      }
       if (!bookDoc.metadata.title) {
         bookDoc.metadata.title = getBaseFilename(file.name);
       }
@@ -210,7 +233,11 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             ttsEnabled: false,
             syncing: false,
             gridInsets: null,
+            gridInsets: null,
             viewSettings: { ...globalViewSettings, ...configViewSettings },
+            sessionId: useProgressStore
+              .getState()
+              .startSession(id, formatTitle(bookDoc.metadata.title), config.progress?.[0] || 0),
           },
         },
       }));
@@ -303,6 +330,15 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           updatedAt: Date.now(),
         };
         setLibrary(updatedLibrary);
+      }
+
+      // Update session progress
+      if (viewState.sessionId) {
+        const { updateSession, recordBookCompletion } = useProgressStore.getState();
+        updateSession(viewState.sessionId, progress[0]);
+        if (progress[0] === progress[1]) {
+          recordBookCompletion(id);
+        }
       }
 
       const oldConfig = bookData.config;

@@ -24,7 +24,11 @@ interface BookDetailModalProps {
   handleBookDelete?: (book: Book) => void;
   handleBookDeleteCloudBackup?: (book: Book) => void;
   handleBookDeleteLocalCopy?: (book: Book) => void;
-  handleBookMetadataUpdate?: (book: Book, updatedMetadata: BookMetadata) => void;
+  handleBookMetadataUpdate?: (
+    book: Book,
+    updatedMetadata: BookMetadata,
+    updatedTags?: string[],
+  ) => void;
 }
 
 interface DeleteConfig {
@@ -52,6 +56,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [editMode, setEditMode] = useState(false);
   const [bookMeta, setBookMeta] = useState<BookMetadata | null>(null);
   const [fileSize, setFileSize] = useState<number | null>(null);
+  const [editedTags, setEditedTags] = useState<string[]>([]);
 
   // Initialize metadata edit hook
   const {
@@ -97,6 +102,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
       try {
         const details = book.metadata || (await appService.fetchBookDetails(book));
         setBookMeta(details);
+        setEditedTags(book.tags || []);
         const size = await appService.getBookFileSize(book);
         setFileSize(size);
       } finally {
@@ -127,7 +133,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const handleSaveMetadata = () => {
     if (editedMeta && handleBookMetadataUpdate) {
       setBookMeta({ ...editedMeta });
-      handleBookMetadataUpdate(book, editedMeta);
+      handleBookMetadataUpdate(book, editedMeta, editedTags);
       setEditMode(false);
     }
   };
@@ -210,6 +216,8 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 onCancel={handleCancelEdit}
                 onReset={resetToOriginal}
                 onSave={handleSaveMetadata}
+                tags={editedTags}
+                onTagsChange={setEditedTags}
               />
             ) : (
               <BookDetailView

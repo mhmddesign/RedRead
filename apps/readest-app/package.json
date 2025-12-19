@@ -1,6 +1,6 @@
 {
-  "name": "@readest/readest-app",
-  "version": "0.9.95",
+  "name": "@redread/redread-app",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "dotenv -e .env.tauri -- next dev",
@@ -71,6 +71,7 @@
     "@tauri-apps/plugin-log": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.2",
     "@tauri-apps/plugin-os": "^2.3.2",
+    "@tauri-apps/plugin-notification": "^2.2.0",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-shell": "~2.3.3",
     "@tauri-apps/plugin-updater": "^2.9.0",
@@ -111,6 +112,7 @@
     "stripe": "^18.2.1",
     "styled-jsx": "^5.1.7",
     "tinycolor2": "^1.6.0",
+    "unrar-js": "^0.2.4",
     "uuid": "^11.1.0",
     "zod": "^4.0.8",
     "zustand": "5.0.6"

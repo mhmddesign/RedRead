@@ -12,6 +12,7 @@ import { getGridTemplate, getInsetEdges } from '@/utils/grid';
 import { getViewInsets } from '@/utils/insets';
 import SettingsDialog from '@/components/settings/SettingsDialog';
 import FoliateViewer from './FoliateViewer';
+import MangaViewer from './MangaViewer';
 import SectionInfo from './SectionInfo';
 import HeaderBar from './HeaderBar';
 import FooterBar from './footerbar/FooterBar';
@@ -124,14 +125,23 @@ const BooksGrid: React.FC<BooksGridProps> = ({ bookKeys, onCloseBook }) => {
               onCloseBook={onCloseBook}
               gridInsets={gridInsets}
             />
-            <FoliateViewer
-              key={viewerKey}
-              bookKey={bookKey}
-              bookDoc={bookDoc}
-              config={config}
-              gridInsets={gridInsets}
-              contentInsets={contentInsets}
-            />
+            {book.format === 'MANGA' ? (
+              <MangaViewer
+                bookKey={bookKey}
+                book={book}
+                gridInsets={gridInsets}
+                contentInsets={contentInsets}
+              />
+            ) : (
+              <FoliateViewer
+                key={viewerKey}
+                bookKey={bookKey}
+                bookDoc={bookDoc}
+                config={config}
+                gridInsets={gridInsets}
+                contentInsets={contentInsets}
+              />
+            )}
             {viewSettings.vertical && viewSettings.scrolled && (
               <>
                 {(showFooter || viewSettings.doubleBorder) && (

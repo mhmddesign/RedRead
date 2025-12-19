@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { EnvProvider } from '@/context/EnvContext';
 import Providers from '@/components/Providers';
+import dynamic from 'next/dynamic';
 
 import '../styles/globals.css';
 
@@ -39,6 +40,8 @@ export const viewport = {
   viewportFit: 'cover',
 };
 
+const AudioPlayer = dynamic(() => import('@/components/audiobook/AudioPlayer'), { ssr: false });
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en'>
@@ -71,6 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <EnvProvider>
           <Providers>{children}</Providers>
+          <AudioPlayer />
         </EnvProvider>
       </body>
     </html>

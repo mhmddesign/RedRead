@@ -236,6 +236,16 @@ const getAuthorsList = (contributors: string | string[] | Contributor | Contribu
       ];
 };
 
+export const getSubjectsList = (subjects: string | string[] | Contributor | undefined) => {
+  if (!subjects) return [];
+  if (Array.isArray(subjects)) {
+    return subjects.filter(Boolean);
+  }
+  return [typeof subjects === 'string' ? subjects : formatLanguageMap(subjects?.name, true)].filter(
+    Boolean,
+  );
+};
+
 const normalizeIdentifier = (identifier: string) => {
   try {
     if (identifier.includes('urn:')) {

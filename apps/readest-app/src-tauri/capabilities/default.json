@@ -157,6 +157,7 @@
     "haptics:allow-selection-feedback",
     "native-bridge:default",
     "native-tts:default",
-    "deep-link:default"
+    "deep-link:default",
+    "notification:default"
   ]
 }
